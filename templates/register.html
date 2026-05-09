@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register — Employee Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --navy:       #1e3a5f;
+            --navy-dark:  #162d4a;
+            --navy-mid:   #2d4a7a;
+            --bg-outer:   #dce4ef;
+            --white:      #ffffff;
+            --border:     #d0d8e4;
+            --text:       #1e3a5f;
+            --muted:      #7a8fa6;
+            --red:        #e74c3c;
+            --green:      #16a34a;
+            --font:       'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg-outer);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .outer-box {
+            background: var(--navy);
+            border-radius: 16px;
+            padding: 40px 36px;
+            width: 100%;
+            max-width: 560px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 20px 60px rgba(30,58,95,.35);
+        }
+
+        .register-card {
+            background: var(--white);
+            border-radius: 10px;
+            padding: 36px 32px 30px;
+            width: 100%;
+            max-width: 420px;
+            border: 2px solid #4a7ab5;
+        }
+
+        .card-header { text-align: center; margin-bottom: 24px; }
+        .card-header h1 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: .5px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+        .card-header p { font-size: .8rem; color: var(--muted); }
+
+        /* Django form errors */
+        .errorlist {
+            list-style: none;
+            background: #fef2f2;
+            border: 1px solid #fca5a5;
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-bottom: 18px;
+            font-size: .8rem;
+            color: var(--red);
+        }
+        .errorlist li::before { content: '⚠ '; }
+
+        .success-banner {
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-bottom: 18px;
+            font-size: .82rem;
+            color: #166534;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .form-group { margin-bottom: 15px; }
+        .form-label {
+            display: block;
+            font-size: .82rem;
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+
+        .input-wrap { position: relative; }
+        .form-control {
+            width: 100%;
+            background: var(--white);
+            border: none;
+            border-bottom: 1.5px solid var(--border);
+            color: var(--text);
+            padding: 9px 32px 9px 0;
+            font-size: .88rem;
+            font-family: var(--font);
+            outline: none;
+            transition: border-color .2s;
+        }
+        .form-control:focus { border-bottom-color: var(--navy); }
+        .form-control::placeholder { color: #b8c8d8; }
+
+        .toggle-pw {
+            position: absolute; right: 0; top: 50%;
+            transform: translateY(-50%);
+            background: none; border: none;
+            cursor: pointer; color: var(--muted);
+            font-size: .78rem; padding: 4px;
+        }
+
+        .field-hint { font-size: .7rem; color: var(--muted); margin-top: 4px; }
+
+        /* Strength bar */
+        .strength-bar {
+            height: 3px; background: var(--border);
+            border-radius: 2px; overflow: hidden; margin: 5px 0 3px;
+        }
+        .strength-fill {
+            height: 100%; width: 0%;
+            border-radius: 2px;
+            transition: width .3s, background .3s;
+        }
+        .strength-text { font-size: .68rem; color: var(--muted); }
+
+        .terms-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 16px;
+            font-size: .78rem;
+            color: var(--muted);
+        }
+        .terms-row input[type="checkbox"] {
+            width: 14px; height: 14px;
+            accent-color: var(--navy);
+            margin-top: 2px; flex-shrink: 0;
+        }
+        .terms-row a { color: var(--navy-mid); font-weight: 600; text-decoration: none; }
+
+        .btn-register {
+            width: 100%;
+            padding: 12px;
+            background: var(--navy-dark);
+            color: var(--white);
+            border: none;
+            border-radius: 8px;
+            font-size: .9rem;
+            font-weight: 700;
+            font-family: var(--font);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background .2s, transform .15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-register:hover { background: var(--navy-mid); transform: translateY(-1px); }
+        .btn-register:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+        .spinner {
+            width: 16px; height: 16px;
+            border: 2px solid rgba(255,255,255,.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin .6s linear infinite;
+            display: none;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .divider {
+            display: flex; align-items: center;
+            gap: 12px; margin: 18px 0;
+            color: var(--muted); font-size: .75rem;
+        }
+        .divider::before, .divider::after {
+            content: ''; flex: 1; height: 1px; background: var(--border);
+        }
+
+        .btn-google {
+            width: 100%;
+            padding: 10px;
+            background: var(--white);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: .85rem;
+            font-weight: 500;
+            font-family: var(--font);
+            color: var(--text);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-decoration: none;
+            transition: background .2s;
+        }
+        .btn-google:hover { background: #f0f4f8; }
+
+        .login-text {
+            text-align: center; margin-top: 18px;
+            font-size: .78rem; color: var(--muted);
+        }
+        .login-text a { color: var(--navy-mid); font-weight: 600; text-decoration: none; }
+        .login-text a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<div class="outer-box">
+    <div class="register-card">
+
+        <div class="card-header">
+            <h1>Create Account</h1>
+            <p>Register to access the employee dashboard</p>
+        </div>
+
+        {# Django messages #}
+        {% if messages %}
+            {% for message in messages %}
+                {% if message.tags == 'success' %}
+                <div class="success-banner">✅ {{ message }}</div>
+                {% else %}
+                <ul class="errorlist"><li>{{ message }}</li></ul>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+
+        {# Django form errors #}
+        {% if form.non_field_errors %}
+        <ul class="errorlist">
+            {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+
+        {# ── DJANGO FORM — POST ke /employee/register/ ── #}
+        <form method="post" action="{% url 'employee:register' %}" id="reg-form">
+            {% csrf_token %}
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">First Name</label>
+                    <input type="text" name="first_name" class="form-control"
+                           placeholder="John"
+                           value="{{ form.first_name.value|default:'' }}" required>
+                    {% if form.first_name.errors %}
+                    <ul class="errorlist" style="margin-top:4px;">{% for e in form.first_name.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Last Name</label>
+                    <input type="text" name="last_name" class="form-control"
+                           placeholder="Doe"
+                           value="{{ form.last_name.value|default:'' }}" required>
+                    {% if form.last_name.errors %}
+                    <ul class="errorlist" style="margin-top:4px;">{% for e in form.last_name.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Username</label>
+                <input type="text" name="username" class="form-control"
+                       placeholder="e.g. john.doe"
+                       value="{{ form.username.value|default:'' }}" required>
+                {% if form.username.errors %}
+                <ul class="errorlist" style="margin-top:4px;">{% for e in form.username.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Email Address</label>
+                <input type="email" name="email" class="form-control"
+                       placeholder="you@company.com"
+                       value="{{ form.email.value|default:'' }}" required>
+                {% if form.email.errors %}
+                <ul class="errorlist" style="margin-top:4px;">{% for e in form.email.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <div class="input-wrap">
+                    <input type="password" name="password1" id="pw1" class="form-control"
+                           placeholder="••••••••" required>
+                    <button type="button" class="toggle-pw" id="toggle-pw1">👁</button>
+                </div>
+                <div class="strength-bar"><div class="strength-fill" id="strength-fill"></div></div>
+                <span class="strength-text" id="strength-text"></span>
+                {% if form.password1.errors %}
+                <ul class="errorlist" style="margin-top:4px;">{% for e in form.password1.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Confirm Password</label>
+                <div class="input-wrap">
+                    <input type="password" name="password2" id="pw2" class="form-control"
+                           placeholder="••••••••" required>
+                    <button type="button" class="toggle-pw" id="toggle-pw2">👁</button>
+                </div>
+                <div class="field-hint" id="pw-match-hint"></div>
+                {% if form.password2.errors %}
+                <ul class="errorlist" style="margin-top:4px;">{% for e in form.password2.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+
+            <div class="terms-row">
+                <input type="checkbox" id="terms" required>
+                <label for="terms">
+                    I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+                </label>
+            </div>
+
+            <button type="submit" class="btn-register" id="submit-btn">
+                <div class="spinner" id="spinner"></div>
+                <span id="btn-text">Create Account</span>
+            </button>
+        </form>
+
+        <div class="divider">or</div>
+
+        <a href="#" class="btn-google">
+            <svg width="18" height="18" viewBox="0 0 24 24">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            Sign up with Google
+        </a>
+
+        <div class="login-text">
+            Already have an account?
+            <a href="{% url 'employee:login' %}">Login here</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    /* Toggle password visibility */
+    document.getElementById('toggle-pw1').addEventListener('click', function() {
+        const pw = document.getElementById('pw1');
+        pw.type = pw.type === 'password' ? 'text' : 'password';
+        this.textContent = pw.type === 'password' ? '👁' : '🙈';
+    });
+    document.getElementById('toggle-pw2').addEventListener('click', function() {
+        const pw = document.getElementById('pw2');
+        pw.type = pw.type === 'password' ? 'text' : 'password';
+        this.textContent = pw.type === 'password' ? '👁' : '🙈';
+    });
+
+    /* Password strength */
+    document.getElementById('pw1').addEventListener('input', function() {
+        const val = this.value;
+        const fill = document.getElementById('strength-fill');
+        const text = document.getElementById('strength-text');
+        let score = 0;
+        if (val.length >= 8) score++;
+        if (/[A-Z]/.test(val)) score++;
+        if (/[0-9]/.test(val)) score++;
+        if (/[^A-Za-z0-9]/.test(val)) score++;
+        const configs = [
+            { pct:'0%',   color:'',        label:'' },
+            { pct:'25%',  color:'#ef4444', label:'Weak' },
+            { pct:'50%',  color:'#f97316', label:'Fair' },
+            { pct:'75%',  color:'#eab308', label:'Good' },
+            { pct:'100%', color:'#16a34a', label:'Strong ✓' },
+        ];
+        const c = configs[score];
+        fill.style.width = c.pct;
+        fill.style.background = c.color;
+        text.textContent = c.label;
+        text.style.color = c.color;
+    });
+
+    /* Password match hint */
+    document.getElementById('pw2').addEventListener('input', function() {
+        const hint = document.getElementById('pw-match-hint');
+        const match = this.value === document.getElementById('pw1').value;
+        if (!this.value) { hint.textContent = ''; return; }
+        hint.textContent = match ? '✓ Passwords match' : '✗ Passwords do not match';
+        hint.style.color  = match ? '#16a34a' : '#e74c3c';
+    });
+
+    /* Loading state on submit */
+    document.getElementById('reg-form').addEventListener('submit', function() {
+        document.getElementById('spinner').style.display = 'block';
+        document.getElementById('btn-text').textContent = 'Creating account…';
+        document.getElementById('submit-btn').disabled = true;
+    });
+</script>
+</body>
+</html>

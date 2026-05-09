@@ -1,0 +1,395 @@
+{% extends 'base.html' %}
+{% block title %}Attendance Details — {{ month_name }} {{ year }}{% endblock %}
+{% block nav_reports %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── BREADCRUMB ── */
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: .8rem;
+    color: var(--muted);
+    margin-bottom: 20px;
+}
+.breadcrumb a {
+    color: var(--muted);
+    text-decoration: none;
+    transition: color .18s;
+}
+.breadcrumb a:hover { color: var(--navy); }
+.breadcrumb .sep { font-size: .7rem; }
+.breadcrumb .current { color: var(--text); font-weight: 600; }
+
+/* ── PAGE HEADER ── */
+.page-hd {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+.page-hd h1 { font-size: 1.45rem; font-weight: 700; color: var(--text); }
+.page-hd p  { font-size: .82rem; color: var(--muted); margin-top: 3px; }
+
+/* ── PERIOD SELECTOR ── */
+.period-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.period-bar select {
+    padding: 8px 32px 8px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: .83rem;
+    font-family: var(--font);
+    color: var(--text);
+    background: var(--white);
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' viewBox='0 0 24 24'%3E%3Cpath stroke='%236b84a0' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    transition: border-color .18s;
+    min-width: 130px;
+}
+.period-bar select:focus { border-color: var(--navy); }
+
+/* ── SUMMARY STRIP ── */
+.summary-strip {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 22px;
+}
+.ss-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    text-align: center;
+}
+.ss-label {
+    font-size: .68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    color: var(--muted);
+    margin-bottom: 8px;
+}
+.ss-value {
+    font-size: 1.7rem;
+    font-weight: 700;
+    line-height: 1;
+}
+.ss-card.c-present .ss-value { color: #16a34a; }
+.ss-card.c-late    .ss-value { color: #d97706; }
+.ss-card.c-absent  .ss-value { color: #dc2626; }
+.ss-card.c-leave   .ss-value { color: #2563eb; }
+.ss-card.c-rate    .ss-value { color: var(--navy); font-size: 1.4rem; }
+
+/* ── TABLE CARD ── */
+.tbl-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+}
+.tbl-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 22px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.tbl-head h3 { font-size: .95rem; font-weight: 700; color: var(--text); }
+
+/* ── DOWNLOAD PDF BUTTON ── */
+.btn-dl-pdf {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 20px;
+    background: var(--navy);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: .83rem;
+    font-weight: 700;
+    font-family: var(--font);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all .2s;
+}
+.btn-dl-pdf:hover { background: var(--navy-light); transform: translateY(-1px); }
+
+/* ── TABLE STYLES ── */
+table { width: 100%; border-collapse: collapse; }
+th {
+    text-align: left;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .3px;
+    color: var(--muted);
+    padding: 11px 18px;
+    border-bottom: 1.5px solid var(--border);
+    background: #f8fafc;
+    white-space: nowrap;
+}
+td {
+    padding: 12px 18px;
+    font-size: .84rem;
+    border-bottom: 1px solid #eef2f7;
+    color: var(--text);
+    vertical-align: middle;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #fafbfd; }
+
+/* today row */
+.row-today td { background: #eff6ff !important; }
+.row-today:hover td { background: #dbeafe !important; }
+
+.td-mono { font-family: 'Courier New', monospace; font-size: .82rem !important; }
+.td-mute { color: var(--muted) !important; }
+.ot-val  { color: #d97706; font-weight: 600; }
+.dur-val { font-weight: 500; }
+
+/* badges */
+.badge { display: inline-block; padding: 3px 11px; border-radius: 20px; font-size: .72rem; font-weight: 600; }
+.b-green  { background: #dcfce7; color: #166534; }
+.b-yellow { background: #fef9c3; color: #a16207; }
+.b-red    { background: #fee2e2; color: #dc2626; }
+.b-blue   { background: #dbeafe; color: #1d4ed8; }
+.b-gray   { background: #f1f5f9; color: #475569; }
+
+/* empty */
+.empty-row td {
+    text-align: center;
+    padding: 50px !important;
+    color: var(--muted);
+    font-size: .88rem;
+}
+
+/* back link */
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .82rem;
+    color: var(--muted);
+    text-decoration: none;
+    margin-bottom: 18px;
+    transition: color .18s;
+}
+.back-link:hover { color: var(--navy); }
+
+@media(max-width:1000px){ .summary-strip{ grid-template-columns: repeat(3,1fr); } }
+@media(max-width:700px) { .summary-strip{ grid-template-columns: repeat(2,1fr); } }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Back link -->
+<a href="{% url 'employee:reports' %}" class="back-link">
+    ← Back to Reports
+</a>
+
+<!-- Page header -->
+<div class="page-hd">
+    <div>
+        <h1>Attendance Details</h1>
+        <p>{{ month_name }} {{ year }} — Full Record for {{ user.get_full_name|default:user.username }}</p>
+    </div>
+
+    <!-- Period selector form -->
+    <form method="get" id="period-form" class="period-bar">
+        <select name="month" onchange="document.getElementById('period-form').submit()">
+            {% for mc in month_choices %}
+            <option value="{{ mc.value }}"
+                    {% if mc.value == selected_month %}selected{% endif %}>
+                {{ mc.label }}
+            </option>
+            {% endfor %}
+        </select>
+        <select name="year" onchange="document.getElementById('period-form').submit()">
+            {% for y in year_choices %}
+            <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+        </select>
+    </form>
+</div>
+
+<!-- Summary strip -->
+<div class="summary-strip">
+    <div class="ss-card c-present">
+        <div class="ss-label">Present</div>
+        <div class="ss-value">{{ summary.present }}</div>
+    </div>
+    <div class="ss-card c-late">
+        <div class="ss-label">Late</div>
+        <div class="ss-value">{{ summary.late }}</div>
+    </div>
+    <div class="ss-card c-absent">
+        <div class="ss-label">Absent</div>
+        <div class="ss-value">{{ summary.absent }}</div>
+    </div>
+    <div class="ss-card c-leave">
+        <div class="ss-label">Permit</div>
+        <div class="ss-value">{{ summary.leave }}</div>
+    </div>
+    <div class="ss-card c-rate">
+        <div class="ss-label">Attendance Rate</div>
+        <div class="ss-value">{{ summary.rate }}%</div>
+    </div>
+</div>
+
+<!-- Table card -->
+<div class="tbl-card">
+    <div class="tbl-head">
+        <h3>{{ month_name }} {{ year }} — {{ attendances|length }} record(s)</h3>
+
+        <!-- ✅ Download PDF button -->
+        <a href="{% url 'employee:report_pdf' %}?month={{ selected_month }}&year={{ selected_year }}"
+           class="btn-dl-pdf"
+           target="_blank">
+            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2
+                         h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            Download PDF
+        </a>
+    </div>
+
+    <div style="overflow-x:auto">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Day</th>
+                    <th>Check-In</th>
+                    <th>Check-In Location</th>
+                    <th>Check-Out</th>
+                    <th>Check-Out Location</th>
+                    <th>Work Duration</th>
+                    <th>Overtime</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for att in attendances %}
+                <tr class="{% if att.date == today %}row-today{% endif %}">
+                    <td class="td-mono">{{ att.date|date:"d-m-Y" }}</td>
+                    <td class="td-mute">{{ att.date|date:"D" }}</td>
+
+                    <!-- Check-in -->
+                    <td class="td-mono">
+                        {% if att.check_in %}
+                            <span style="color:#16a34a;font-weight:600;">
+                                {{ att.check_in|time:"H:i" }}
+                            </span>
+                        {% else %}
+                            <span class="td-mute">—</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Check-in location -->
+                    <td style="font-size:.78rem; max-width:180px;">
+                        {% if att.check_in_address %}
+                            <span style="color:var(--muted);" title="{{ att.check_in_address }}">
+                                {{ att.check_in_address|truncatechars:35 }}
+                            </span>
+                        {% elif att.check_in_lat %}
+                            <span class="td-mute">
+                                {{ att.check_in_lat|floatformat:4 }},
+                                {{ att.check_in_lng|floatformat:4 }}
+                            </span>
+                        {% else %}
+                            <span class="td-mute">—</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Check-out -->
+                    <td class="td-mono">
+                        {% if att.check_out %}
+                            <span style="color:#2563eb;font-weight:600;">
+                                {{ att.check_out|time:"H:i" }}
+                            </span>
+                        {% else %}
+                            <span class="td-mute">—</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Check-out location -->
+                    <td style="font-size:.78rem; max-width:180px;">
+                        {% if att.check_out_address %}
+                            <span style="color:var(--muted);" title="{{ att.check_out_address }}">
+                                {{ att.check_out_address|truncatechars:35 }}
+                            </span>
+                        {% elif att.check_out_lat %}
+                            <span class="td-mute">
+                                {{ att.check_out_lat|floatformat:4 }},
+                                {{ att.check_out_lng|floatformat:4 }}
+                            </span>
+                        {% else %}
+                            <span class="td-mute">—</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Duration -->
+                    <td>
+                        {% if att.duration %}
+                            <span class="dur-val">{{ att.duration }}</span>
+                        {% else %}
+                            <span class="td-mute">—</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Overtime -->
+                    <td>
+                        {% if att.overtime %}
+                            <span class="ot-val">{{ att.overtime }}</span>
+                        {% else %}
+                            <span class="td-mute">—</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Status -->
+                    <td>
+                        {% if att.date == today and not att.check_in %}
+                            <span class="badge b-gray">Today</span>
+                        {% elif att.status == 'present' %}
+                            <span class="badge b-green">Present</span>
+                        {% elif att.status == 'late' %}
+                            <span class="badge b-yellow">Late</span>
+                        {% elif att.status == 'absent' %}
+                            <span class="badge b-red">Absent</span>
+                        {% elif att.status == 'leave' %}
+                            <span class="badge b-blue">Permit</span>
+                        {% else %}
+                            <span class="badge b-gray">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr class="empty-row">
+                    <td colspan="9">
+                        📭 No attendance records for {{ month_name }} {{ year }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
